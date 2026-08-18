@@ -63,12 +63,15 @@ Note: The daemon renders logged argv as [a b c], so if the .so path is the last 
 
 
 ## TESTED ENVIRONMENTS
-OS        Kernel                                                                                                 opensnitch version
-Debian  13 (trixie)       6.12.101+deb13-cloud-amd64                                     1.6.9-3 (default install) AND the latest upstream v1.8.0
-Ubuntu 26.04 LTS ("Resolute Raccoon")    7.0.0-1016-nvidia                               1.6.9-3ubuntu1 (default install)
-Debian 13 (trixie) + GNOME desktop       6.12.101+deb13-cloud-amd64                      1.6.9-3 (default install)
 
-Due to the way the log is written via an eBPF-based process monitor, the PoC I provided will only work on versions 1.6.0 - 1.8.0 (latest as of the time of writing). Since previous versions (prior to 1.6.0) used a different logging mechanism, the PoC will fail. The ability to redirect logs and write as root exists in versions 1.0.1 - 1.8.0 of opensnitch, but because of the way the pre-1.6.0 formatted the logging it is not as simple to get the attacker controlled *.so to load from /etc/ld.so.preload.
+| Operating System | Kernel Version | OpenSnitch Version |
+| :--- | :--- | :--- |
+| **Debian 13 (trixie)** | `6.12.101+deb13-cloud-amd64` | `1.6.9-3` AND 1.8.0 (lastest version) |
+| **Ubuntu 26.04 LTS ("Resolute Raccoon")** | `7.0.0-1016-nvidia` | `1.6.9-3ubuntu1` |
+| **Debian 13 (trixie)** | `6.12.101+deb13-cloud-amd64` | `1.6.9-3` |
+
+
+Due to the way the log is written via an eBPF-based process monitor, **the PoC I provided will only work on versions 1.6.0 - 1.8.0** (latest as of the time of writing). Since previous versions (prior to 1.6.0) used a different logging mechanism, the PoC will fail. **The ability to redirect logs and write as root exists in versions 1.0.1 - 1.8.0 of opensnitch**, but because of the way the pre-1.6.0 formatted the logging it is not as simple to get the attacker controlled *.so to load from /etc/ld.so.preload.
 
 ## Using the opensnitch_poc.py:
 
