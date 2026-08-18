@@ -4,11 +4,11 @@
 
 opensnitchd runs as root and connects out, as a gRPC client, to unix:///tmp/osui.sock. The GUI is the gRPC server and the daemon is the client. That connection is unauthenticated by default (grpc.WithInsecure()), and /tmp is world-writable, so an unprivileged user can bind that path before the daemon dials it and become the daemon's trusted peer. From there, the daemon's own CHANGE_CONFIG notification handler accepts and persists attacker-supplied configuration. Using that, the attacker points the daemon's LogFile at /etc/ld.so.preload and turns on verbose exec logging, which makes root write an attacker-supplied token into that file, such as "/tmp/.malicious.so". glibc's dynamic linker will subsequently load it into every process that starts afterward, including root's processes. Thus, allowing privileged code execution. Please see the opensnitch_poc.py in this repo.
 
-A note. Mutual-TLS auth (AuthTLSMutual) exists in opensnitch but is opt-in and off by default. Even if authentication is enabled via a TLS cert, this vulnerability is NOT mitigated if an attacker has access as the user that set up the authentication as they would have read access to the TLS cert. With the default settings, there is no authentication and anyone on the system would be able to abuse this vulnerability as long as the /tmp/osui.sock is not currently owned by someone else. 
+A note. Mutual-TLS auth (AuthTLSMutual) exists in opensnitch but is opt-in and off by default. Even if authentication is enabled via a TLS cert, this vulnerability is NOT mitigated if an attacker has access as the user that set up the authentication, as they would have read access to the TLS cert. With the default settings, there is no authentication and anyone on the system would be able to abuse this vulnerability as long as the /tmp/osui.sock is not currently owned by someone else. 
 
-## Exploit Chain:
+## Exploit Chain
 ### 1. Socket takeover
-daemon/ui/client.go, openSocket() dials Server.Address. By default this address is unix:///tmp/osui.sock, which is set in /etc/opensnitchd/default-config.json. When credsType is empty or "simple" the dial option is grpc.WithInsecure(), which effectively means there is no authentication.  Since /tmp is world-writable and the socket path doesn't exist until something binds it, and the daemon retries the dial if nothing is listening yet, an unprivileged user can bind unix:///tmp/osui.sock if it is not already bound.
+daemon/ui/client.go, openSocket() dials Server.Address. By default this address is unix:///tmp/osui.sock which is set in /etc/opensnitchd/default-config.json. When credsType is empty or "simple" the dial option is grpc.WithInsecure(), which effectively means there is no authentication. Since /tmp is world-writable and the socket path doesn't exist until something binds it, and the daemon retries the dial if nothing is listening yet, an unprivileged user can bind unix:///tmp/osui.sock if it is not already bound.
 
 
 ##### /etc/opensnitchd/default-config.json
@@ -80,11 +80,12 @@ Setup (run in the same directory as the PoC):
     python3 rootshell.py
 
 Notes for the PoC:
-please run this in a VM that is not important due to the configuration and /etc/ld.so.preload setting changes.
-There is clean up that happens upon failure and success, but it may not work 100% of the time.
-If you use Ctrl+C this script will clean up as much as possible before exiting.
-I believe I handled the worst issues, but there may be edge cases that have not been considered. Again, run this in a VM you do not mind breaking.
-The PoC creates a /usr/lib/.rootshell with the suid bit set. Run "/usr/lib/.rootshell -p" to get root again after initial successful execution.
+
+- Please run this in a VM that is not important due to the configuration and /etc/ld.so.preload setting changes.
+- There is clean up that happens upon failure and success, but it may not work 100% of the time.
+- If you use Ctrl+C this script will clean up as much as possible before exiting.
+- I believe I handled the worst issues, but there may be edge cases that have not been considered. Again, run this in a VM you do not mind breaking.
+- The PoC creates a /usr/lib/.rootshell with the suid bit set. Run "/usr/lib/.rootshell -p" to get root again after initial successful execution.
 
 
 
