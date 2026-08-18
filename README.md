@@ -5,16 +5,30 @@
 opensnitchd runs as root and connects out, as a gRPC client, to unix:///tmp/osui.sock. The GUI is the gRPC server and the daemon is the client. That connection is unauthenticated by default (grpc.WithInsecure()), and /tmp is world-writable, so an unprivileged user can bind that path before the daemon dials it and become the daemon's trusted peer. From there, the daemon's own CHANGE_CONFIG notification handler accepts and persists attacker-supplied configuration. Using that, the attacker points the daemon's LogFile at /etc/ld.so.preload and turns on verbose exec logging, which makes root write an attacker-supplied token into that file, such as "/tmp/.malicious.so". glibc's dynamic linker will subsequently load it into every process that starts afterward, including root's processes. Thus, allowing privileged code execution. Please see the opensnitch_poc.py in this repo.
 
 
+## Using opensnitch_poc.py:
+
+#### Setup (run in the same directory as the PoC):
+
+    sudo apt-get install -y opensnitch python3-grpcio python3-grpc-tools gcc libc6-dev
+    curl -sfLO https://raw.githubusercontent.com/evilsocket/opensnitch/master/proto/ui.proto
+    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ui.proto
+    python3 opensnitch_poc.py
+
+#### Notes for the PoC:
+
+- Please run in a VM that you do not mind breaking due to the configuration and /etc/ld.so.preload setting changes.
+- There is clean up that happens upon failure and success, but it may not work 100% of the time.
+- If you use Ctrl+C this script will clean up as much as possible before exiting.
+- I believe I handled the worst issues, but there may be edge cases that have not been considered. Again, run this in a unimportant VM.
+- The PoC creates a /usr/lib/.rootshell with the suid bit set. Run "/usr/lib/.rootshell -p" to get root again after initial successful execution.
+
+
 
 ## Exploit Chain
 ### 1. Socket takeover
 daemon/ui/client.go, openSocket() dials Server.Address. By default this address is unix:///tmp/osui.sock which is set in /etc/opensnitchd/default-config.json. When credsType is empty or "simple" the dial option is grpc.WithInsecure(), which effectively means there is no authentication. Since /tmp is world-writable and the socket path doesn't exist until something binds it, and the daemon retries the dial if nothing is listening yet, an unprivileged user can bind unix:///tmp/osui.sock if it is not already bound.
 
 
-##### /etc/opensnitchd/default-config.json
-```
-#### add the default config here
-```
 
 
 ##### daemon/ui/auth/auth.go
@@ -25,6 +39,22 @@ New():
         return grpc.WithInsecure(), nil
     }
 ```
+
+
+##### Relevant configurations in /etc/opensnitchd/default-config.json
+```
+{
+    "Server":
+    {
+        "Address":"unix:///tmp/osui.sock",
+        "LogFile":"/var/log/opensnitchd.log"
+    },
+    "ProcMonitorMethod": "ebpf",
+    "LogLevel": 2,
+}
+
+```
+
 
 
 ### 2. Config takeover
@@ -42,8 +72,20 @@ handleActionChangeConfig():
         err = config.Save(configFile, ntf.Data)
 ```
 
-The poc will change the configuration in default-config.json to this:
+##### Relevant configurations in default-config.json during explotation:
 
+```
+{
+    "Server": {
+        "Address": "unix:///tmp/osui.sock",
+        "LogFile": "/etc/ld.so.preload"
+    },
+    "ProcMonitorMethod": "ebpf",
+    "LogLevel": 0,
+    },
+}
+
+```
 
 ### 3. Root's logging becomes an attacker-directed write
 The pushed config in the opensnitch_poc.py sets Server.LogFile to /etc/ld.so.preload and LogLevel: 0. At LogLevel 0 the daemon's eBPF-based process monitor logs every exec event with full path and argv, both entirely attacker-chosen (the attacker just execs whatever they like, as themselves). The way the poc takes advantage of this write is by including a *.so file into /etc/ld.so.preload. The following is an example of a line that could be written into the now attacker-specified LogFile.
@@ -58,7 +100,7 @@ Note: The daemon renders logged argv as [a b c], so if the .so path is the last 
 
 ## REQUIREMENTS
 - opensnitch installed and opensnitchd running.
-- The attacker must be logged in as the user that owns /tmp/osui.sock OR /tmp/osui.sock must not exist yet.
+- The attacker must be logged in as the user that owns /tmp/osui.sock OR /tmp/osui.sock must not exist.
 - gcc/libc6-dev (to build the .so payload) and python3-grpcio. The latter is a dependency of the opensnitch-ui package, so it is most likely present on any box that installed it.
 
 
@@ -68,27 +110,10 @@ Note: The daemon renders logged argv as [a b c], so if the .so path is the last 
 | :--- | :--- | :--- |
 | **Debian 13 (trixie)** | `6.12.101+deb13-cloud-amd64` | `1.6.9-3` AND 1.8.0 (lastest version) |
 | **Ubuntu 26.04 LTS ("Resolute Raccoon")** | `7.0.0-1016-nvidia` | `1.6.9-3ubuntu1` |
-| **Debian 13 (trixie)** | `6.12.101+deb13-cloud-amd64` | `1.6.9-3` |
 
 
 Due to the way the log is written via an eBPF-based process monitor, **the PoC I provided will only work on versions 1.6.0 - 1.8.0** (latest as of the time of writing). Since previous versions (prior to 1.6.0) used a different logging mechanism, the PoC will fail. **The ability to redirect logs and write as root exists in versions 1.0.1 - 1.8.0 of opensnitch**, but because of the way the pre-1.6.0 formatted the logging it is not as simple to get the attacker controlled *.so to load from /etc/ld.so.preload.
 
-## Using the opensnitch_poc.py:
-
-#### Setup (run in the same directory as the PoC):
-
-    sudo apt-get install -y opensnitch python3-grpcio python3-grpc-tools gcc libc6-dev
-    curl -sfLO https://raw.githubusercontent.com/evilsocket/opensnitch/master/proto/ui.proto
-    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ui.proto
-    python3 rootshell.py
-
-#### Notes for the PoC:
-
-- Please run this in a VM that is not important due to the configuration and /etc/ld.so.preload setting changes.
-- There is clean up that happens upon failure and success, but it may not work 100% of the time.
-- If you use Ctrl+C this script will clean up as much as possible before exiting.
-- I believe I handled the worst issues, but there may be edge cases that have not been considered. Again, run this in a VM you do not mind breaking.
-- The PoC creates a /usr/lib/.rootshell with the suid bit set. Run "/usr/lib/.rootshell -p" to get root again after initial successful execution.
 
 
 
