@@ -4,7 +4,7 @@
 
 opensnitchd runs as root and connects out, as a gRPC client, to unix:///tmp/osui.sock. The GUI is the gRPC server and the daemon is the client. That connection is unauthenticated by default (grpc.WithInsecure()), and /tmp is world-writable, so an unprivileged user can bind that path before the daemon dials it and become the daemon's trusted peer. From there, the daemon's own CHANGE_CONFIG notification handler accepts and persists attacker-supplied configuration. Using that, the attacker points the daemon's LogFile at /etc/ld.so.preload and turns on verbose exec logging, which makes root write an attacker-supplied token into that file, such as "/tmp/.malicious.so". glibc's dynamic linker will subsequently load it into every process that starts afterward, including root's processes. Thus, allowing privileged code execution. Please see the opensnitch_poc.py in this repo.
 
-A note. Mutual-TLS auth (AuthTLSMutual) exists in opensnitch but is opt-in and off by default. Even if authentication is enabled via a TLS cert, this vulnerability is NOT mitigated if an attacker has access as the user that set up the authentication, as they would have read access to the TLS cert. With the default settings, there is no authentication and anyone on the system would be able to abuse this vulnerability as long as the /tmp/osui.sock is not currently owned by someone else. 
+
 
 ## Exploit Chain
 ### 1. Socket takeover
@@ -75,14 +75,14 @@ Due to the way the log is written via an eBPF-based process monitor, **the PoC I
 
 ## Using the opensnitch_poc.py:
 
-Setup (run in the same directory as the PoC):
+#### Setup (run in the same directory as the PoC):
 
     sudo apt-get install -y opensnitch python3-grpcio python3-grpc-tools gcc libc6-dev
     curl -sfLO https://raw.githubusercontent.com/evilsocket/opensnitch/master/proto/ui.proto
     python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ui.proto
     python3 rootshell.py
 
-Notes for the PoC:
+#### Notes for the PoC:
 
 - Please run this in a VM that is not important due to the configuration and /etc/ld.so.preload setting changes.
 - There is clean up that happens upon failure and success, but it may not work 100% of the time.
@@ -91,4 +91,7 @@ Notes for the PoC:
 - The PoC creates a /usr/lib/.rootshell with the suid bit set. Run "/usr/lib/.rootshell -p" to get root again after initial successful execution.
 
 
+
+## A note about scope
+Mutual-TLS auth (AuthTLSMutual) exists in opensnitch but is opt-in and off by default. Even if authentication is enabled via a TLS cert, this vulnerability is NOT mitigated if an attacker has access as the user that set up the authentication, as they would have read access to the TLS cert. With the default settings, there is no authentication and anyone on the system would be able to abuse this vulnerability as long as the /tmp/osui.sock is not currently owned by someone else.
 
