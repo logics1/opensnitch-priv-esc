@@ -2,7 +2,7 @@
 change rootshell.py to opensnitch_poc.py
 fill out the readme
   - the readme should include the summary of the vulnerability. snippets of the code should be moved with explinations before
-
+  - ADD the default config and the new config after change... Is this how it works? 
 add opensnitch_poc.py to the repo
 
 make and add a separate_poc for the arbitrary root write for the versions 1.0 - 1.5
