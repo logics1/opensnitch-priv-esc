@@ -6,7 +6,7 @@ Please see technical_writeup.md for the technical details and requirements for u
 
 ## Using opensnitch_poc.py:
 
-#### Setup (run in the same directory as the PoC):
+#### Setup:
 
     sudo apt-get install -y opensnitch python3-grpcio python3-grpc-tools gcc libc6-dev
     curl -sfLO https://raw.githubusercontent.com/evilsocket/opensnitch/master/proto/ui.proto
