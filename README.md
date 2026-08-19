@@ -7,13 +7,13 @@ Please see technical_writeup.md for the technical details and requirements for u
 ## Using opensnitch_poc.py:
 
 #### Setup:
-
-    sudo apt-get install -y opensnitch python3-grpcio python3-grpc-tools gcc libc6-dev
-    curl -sfLO https://raw.githubusercontent.com/evilsocket/opensnitch/master/proto/ui.proto
-    curl -sfOL https://raw.githubusercontent.com/logics1/opensnitch-priv-esc/refs/heads/main/opensnitch_poc.py
-    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ui.proto
-    python3 opensnitch_poc.py
-
+```
+sudo apt-get install -y opensnitch python3-grpcio python3-grpc-tools gcc libc6-dev
+curl -sfLO https://raw.githubusercontent.com/evilsocket/opensnitch/master/proto/ui.proto
+curl -sfOL https://raw.githubusercontent.com/logics1/opensnitch-priv-esc/refs/heads/main/opensnitch_poc.py
+python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ui.proto
+python3 opensnitch_poc.py
+```
 #### Notes for the PoC:
 
 - Please run in a VM that you do not mind breaking due to the configuration and /etc/ld.so.preload setting changes.
