@@ -50,7 +50,7 @@ New():
         "LogFile":"/var/log/opensnitchd.log"
     },
     "ProcMonitorMethod": "ebpf",
-    "LogLevel": 2,
+    "LogLevel": 2
 }
 
 ```
@@ -81,8 +81,7 @@ handleActionChangeConfig():
         "LogFile": "/etc/ld.so.preload"
     },
     "ProcMonitorMethod": "ebpf",
-    "LogLevel": 0,
-    },
+    "LogLevel": 0
 }
 
 ```
@@ -100,7 +99,7 @@ Note: The daemon renders logged argv as [a b c], so if the .so path is the last 
 
 ## REQUIREMENTS
 - opensnitch installed and opensnitchd running.
-- The attacker must be logged in as the user that owns /tmp/osui.sock OR /tmp/osui.sock must not exist.
+- /tmp/osui.sock must not be currently owned by another user.
 - gcc/libc6-dev (to build the .so payload) and python3-grpcio. The latter is a dependency of the opensnitch-ui package, so it is most likely present on any box that installed it.
 
 
@@ -113,8 +112,6 @@ Note: The daemon renders logged argv as [a b c], so if the .so path is the last 
 
 
 Due to the way the log is written via an eBPF-based process monitor, **the PoC I provided will only work on versions 1.6.0 - 1.8.0** (latest as of the time of writing). Since previous versions (prior to 1.6.0) used a different logging mechanism, the PoC will fail. **The ability to redirect logs and write as root exists in versions 1.0.1 - 1.8.0 of opensnitch**, but because of the way the pre-1.6.0 formatted the logging it is not as simple to get the attacker controlled *.so to load from /etc/ld.so.preload.
-
-
 
 
 ## A note about scope
