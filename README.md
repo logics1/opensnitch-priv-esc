@@ -111,9 +111,56 @@ Note: The daemon renders logged argv as [a b c], so if the .so path is the last 
 | **Ubuntu 26.04 LTS ("Resolute Raccoon")** | `7.0.0-1016-nvidia` | `1.6.9-3ubuntu1` |
 
 
+## Scope
+RCE on 1.6.0 - 1.8.0
+Socket Takeover and root write 1.0.1 - 1.8.0 
 Due to the way the log is written via an eBPF-based process monitor, **the PoC I provided will only work on versions 1.6.0 - 1.8.0** (latest as of the time of writing). Since previous versions (prior to 1.6.0) used a different logging mechanism, the PoC will fail. **The ability to redirect logs and write as root exists in versions 1.0.1 - 1.8.0 of opensnitch**, but because of the way the pre-1.6.0 formatted the logging it is not as simple to get the attacker controlled *.so to load from /etc/ld.so.preload.
 
+Mutual-TLS auth (AuthTLSMutual) exists in opensnitch but is opt-in and off by default. **Even if authentication is enabled via a TLS cert, this vulnerability is NOT mitigated** if an attacker has access as the user that set up the authentication, as they would have read access to the TLS cert. With the default settings, there is no authentication and anyone on the system would be able to abuse this vulnerability as long as the /tmp/osui.sock is not currently owned by a separate user.
 
-## A note about scope
-Mutual-TLS auth (AuthTLSMutual) exists in opensnitch but is opt-in and off by default. Even if authentication is enabled via a TLS cert, this vulnerability is NOT mitigated if an attacker has access as the user that set up the authentication, as they would have read access to the TLS cert. With the default settings, there is no authentication and anyone on the system would be able to abuse this vulnerability as long as the /tmp/osui.sock is not currently owned by someone else.
+
+## CVE Information
+
+**CVSS 3.1: AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H — 8.4 (High)**
+
+
+**CWE-306 — Missing Authentication for Critical Function** *(shipped default: `simple`)*
+The default connects the gRPC UI socket with no authentication at all
+(`credsType == "" || credsType == AuthSimple` → `grpc.WithInsecure()`, Step 1). In this
+configuration there is no identity check whatsoever — any local process that binds the socket
+first becomes the daemon's trusted peer.
+
+**CWE-863 — Incorrect Authorization** *(`tls-simple` / `tls-mutual` configurations)*
+Turning on the daemon's optional TLS authentication does not fix this. As described in Scope,
+both TLS modes verify that the peer holds valid credentials for the account configured to run
+`opensnitch-ui` — they never verify the peer is the specific, currently-legitimate GUI session.
+An authenticated-but-illegitimate peer (same account, different process) still passes. This is a
+distinct defect from CWE-306, not a restatement of it: authentication is present and succeeds here
+— it simply checks the wrong thing.
+
+**CWE-283 — Unverified Ownership**
+Step 1's socket takeover works because the daemon dials `unix:///tmp/osui.sock` and treats
+whichever process is listening there as its trusted peer, without ever verifying that peer is the
+legitimate `opensnitch-ui` process rather than anything else that happened to bind the path first.
+
+**CWE-73 — External Control of File Name or Path**
+Step 2's config takeover lets the attacker set `Server.LogFile` to an arbitrary absolute path —
+`/etc/ld.so.preload` — with no validation or restriction on what that path can be.
+
+**CWE-427 — Uncontrolled Search Path Element**
+Step 4: once `/etc/ld.so.preload` is redirected and populated with attacker-controlled content,
+glibc's dynamic linker treats it as a trusted list of libraries to load into every subsequent
+process. The attacker fully controls an element of that load path.
+
+**CWE-269 — Improper Privilege Management**
+Net effect of the full chain (Steps 1–4), under either configuration state above: an unprivileged
+local user obtains a root shell.
+
+#### Timeline:
+- Aug 17 00:56 UTC: sent email notifying the author of the vulnerability, providing the PoC and details of the vulnerability. 
+- Aug 17 11:56 UTC: Was told by the author "Go ahead and ask for the CVE" but they indicated that they would not be fixing it. 
+- Aug 19 00:39 UTC: informed the author that I will be requesting a CVE. 
+
+
+
 
