@@ -1,6 +1,6 @@
 ## SUMMARY
 
-There is a local privilege escalation vulnerability in https://github.com/evilsocket/opensnitch. 
+There is a local privilege escalation vulnerability in https://github.com/evilsocket/opensnitch
 
 Please see technical_writeup.md for the technical details and requirements for using opensnitch_poc.py. 
 
