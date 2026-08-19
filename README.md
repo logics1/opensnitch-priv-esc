@@ -112,9 +112,9 @@ Note: The daemon renders logged argv as [a b c], so if the .so path is the last 
 
 
 ## Scope
-RCE on 1.6.0 - 1.8.0
+Full root priv esc: 1.6.0 - 1.8.0
 
-Socket Takeover and root write 1.0.1 - 1.8.0 
+Socket Takeover and root write: 1.0.1 - 1.8.0 
 
 Due to the way the log is written via an eBPF-based process monitor, **the PoC I provided will only work on versions 1.6.0 - 1.8.0** (latest as of the time of writing). Since previous versions (prior to 1.6.0) used a different logging mechanism, the PoC will fail. **The ability to redirect logs and write as root exists in versions 1.0.1 - 1.8.0 of opensnitch**, but because of the way the pre-1.6.0 formatted the logging it is not as simple to get the attacker controlled *.so to load from /etc/ld.so.preload.
 
