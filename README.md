@@ -161,7 +161,8 @@ local user obtains a root shell.
 #### Timeline:
 - Aug 17 00:56 UTC: sent email notifying the author of the vulnerability, providing the PoC and details of the vulnerability. 
 - Aug 17 11:56 UTC: Was told by the author "Go ahead and ask for the CVE" but they indicated that they would not be fixing it. 
-- Aug 19 00:39 UTC: informed the author that I will be requesting a CVE. 
+- Aug 19 00:39 UTC: informed the author that I will be requesting a CVE.
+- Aug 19 01:09 UTC: submitted issue https://github.com/evilsocket/opensnitch/issues/1653 to the opensnitch repo. 
 
 
 
