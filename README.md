@@ -94,6 +94,7 @@ The pushed config in the opensnitch_poc.py sets Server.LogFile to /etc/ld.so.pre
 
 ### 4. glibc will read /etc/ld.so.preload and turn the write into code execution
 /etc/ld.so.preload is parsed by the dynamic linker on every subsequent exec(). It splits on whitespace, each token tried as a shared library, anything that fails to resolve is ignored. The attacker's *.so path does resolve though, so it loads into dynamically-linked processes that start afterward, including root's.
+
 Note: The daemon renders logged argv as [a b c], so if the .so path is the last argument the token picks up a trailing ] and fails to resolve. A trailing dummy argument avoids this, such as the x we have above in the log line.
 
 
