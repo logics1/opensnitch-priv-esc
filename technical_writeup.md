@@ -9,7 +9,7 @@ opensnitchd runs as root and connects out, as a gRPC client, to unix:///tmp/osui
 ### 1. Socket takeover
 daemon/ui/client.go, openSocket() dials Server.Address. By default this address is unix:///tmp/osui.sock which is set in /etc/opensnitchd/default-config.json. When credsType is empty or "simple" the dial option is grpc.WithInsecure(), which effectively means there is no authentication. Since /tmp is world-writable and the socket path doesn't exist until something binds it, and the daemon retries the dial if nothing is listening yet, an unprivileged user can bind unix:///tmp/osui.sock if it is not already bound.
 
-**Please see note about scope if authentication is enabled, as the vulnerability still exists with authentication enabled.**
+**Please see notes about scope. If authentication is enabled, the vulnerability still exists, but limits the scope.**
 
 
 
