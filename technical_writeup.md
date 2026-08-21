@@ -101,7 +101,7 @@ Socket Takeover and root write: 1.0.1 - 1.8.0
 
 Due to the way the log is written via an eBPF-based process monitor, **the PoC I provided will only work on versions 1.6.0 - 1.8.0** (latest as of the time of writing). Since previous versions (prior to 1.6.0) used a different logging mechanism, the PoC will fail. **The ability to redirect logs and write as root exists in versions 1.0.1 - 1.8.0 of opensnitch**, but because of the way the pre-1.6.0 formatted the logging it is not as simple to get the attacker controlled *.so to load from /etc/ld.so.preload.
 
-Mutual-TLS auth (AuthTLSMutual) exists in opensnitch but is opt-in and off by default. **Even if authentication is enabled via a TLS cert, this vulnerability is NOT mitigated** if an attacker has access as the user that set up the authentication, as they would have read access to the TLS cert. With the default settings, there is no authentication and anyone on the system would be able to abuse this vulnerability as long as the /tmp/osui.sock is not currently owned by a separate user.
+Mutual-TLS auth (AuthTLSMutual) exists in opensnitch but is opt-in and off by default. **Even if authentication is enabled via a TLS cert, this vulnerability is NOT mitigated if an attacker has access as the user that set up the authentication**, as they would have read access to the TLS cert. With the default settings, there is no authentication and anyone on the system would be able to abuse this vulnerability as long as the /tmp/osui.sock is not currently owned by a separate user.
 
 
 ## CVE Information
